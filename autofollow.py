@@ -1,6 +1,7 @@
 import requests
 import pickle
 import yaml
+import time
 import os
 
 # cd to dir with script (for cron jobs)
@@ -42,8 +43,12 @@ def follow(username: str):
     if username in following or username == me:
         return
 
-    print(f'following {username}')
-    s.put(follow_url.format(username=username))
+    print(f'following {username} ')
+    r = s.put(follow_url.format(username=username))
+    if r.status_code == 429:
+        print('rate limit hit, waiting 60 seconds')
+        time.sleep(60)
+        return follow(username)
     following.add(username)
 
 def follow_all(usernames: list[str]):
