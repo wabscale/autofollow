@@ -28,10 +28,12 @@ s.headers['accept'] = 'application/vnd.github.v3+json'
 s.headers['Authorization'] = f'token {token}'
 
 user_repos_url = 'https://api.github.com/users/{username}/repos'
-stars_url = 'https://api.github.com/repos/{repo}/stargazers'
+user_url = 'https://api.github.com/users/{username}'
+repo_url = 'https://api.github.com/repos/{repo}'
+stars_url = 'https://api.github.com/repos/{repo}/stargazers?per_page=100&page={page}'
 contributors_url = 'https://api.github.com/repos/{repo}/contributors'
 follow_url = 'https://api.github.com/user/following/{username}'
-following_url = 'https://api.github.com/users/{username}/followers'
+following_url = 'https://api.github.com/users/{username}/followers?per_page=100&page={page}'
 
 users_to_follow: set[str] = set()
 if os.path.exists('following.pickle'):
@@ -58,16 +60,25 @@ def follow_all(usernames: list[str]):
 def get_repo_usernames(repos: str) -> set[str]:
     usernames = set()
     for repo in repos:
-        print('inspecting', repo)
-        for user in s.get(stars_url.format(repo=repo)).json():
-            usernames.add(user.get('login', me))
-        for user in s.get(contributors_url.format(repo=repo)).json():
-            usernames.add(user.get('login', me))
+        r = s.get(repo_url.format(repo=repo)).json()
+        count = r["stargazers_count"]
+        print('inspecting', repo, count)
+        for page in range((count+100)//100):
+            for user in s.get(stars_url.format(repo=repo, page=page)).json():
+                usernames.add(user.get('login', me))
+            for user in s.get(contributors_url.format(repo=repo, page=page)).json():
+                usernames.add(user.get('login', me))
     return usernames
 
 def get_user_followers(username: str) -> set[str]:
-    users = s.get(following_url.format(username=username)).json()
-    return {user.get('login', me) for user in users}
+    user = s.get(user_url.format(username=username)).json()
+    followers = user['followers']
+    usernames = set()
+    for page in range((followers+100)//100):
+        users = s.get(following_url.format(username=username, page=page)).json()
+        for u in users:
+            usernames.add(u.get('login', me))
+    return usernames
 
 def get_user_repos(username: str) -> set[str]:
     return  {repo['full_name'] for repo in s.get(user_repos_url.format(username=username)).json()}
@@ -93,6 +104,7 @@ for cool_person in cool_people:
 
 # Remove people that we are already following
 users_to_follow = users_to_follow.difference(following)
+print('going to following', len(users_to_follow))
 
 follow_all(users_to_follow)
 
