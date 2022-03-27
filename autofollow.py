@@ -1,6 +1,6 @@
 import requests
 import pickle
-import pyyaml
+import yaml
 import os
 
 # cd to dir with script (for cron jobs)
