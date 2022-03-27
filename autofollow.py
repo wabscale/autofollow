@@ -18,7 +18,7 @@ os.chdir(script_dir)
 ##
 config = yaml.safe_load(open('config.json'))
 me = config['me']
-cool_people = config['cool_peopl']
+cool_people = config['cool_people']
 config_repos = config['repos']
 
 token = open('TOKEN').read()
