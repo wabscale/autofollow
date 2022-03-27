@@ -34,7 +34,7 @@ following_url = 'https://api.github.com/users/{username}/followers'
 
 users_to_follow: set[str] = set()
 if os.path.exists('following.pickle'):
-    following: set[str] = pickle.load(open('following.pickle'))
+    following: set[str] = pickle.load(open('following.pickle', 'rb'))
 else:
     following: set[str] = set()
 
